@@ -1,0 +1,24 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# App runtime folders (don't commit generated content)
+uploads/*
+reports/*
+!uploads/.gitkeep
+!reports/.gitkeep
+
+# Env
+.env

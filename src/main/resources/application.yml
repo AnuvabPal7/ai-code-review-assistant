@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: ai-code-review-assistant
+  datasource:
+    url: jdbc:postgresql://<your-pooler-host>:6543/postgres?sslmode=require&user=postgres.<your-project-ref>&password=${DB_PASSWORD}&prepareThreshold=0
+    username: postgres
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+server:
+  port: 8080
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000
+
+app:
+  upload-dir: ./uploads
+  reports-dir: ./reports

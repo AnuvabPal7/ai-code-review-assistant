@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: acr-postgres
+    environment:
+      POSTGRES_DB: acr_db
+      POSTGRES_USER: acr_user
+      POSTGRES_PASSWORD: acr_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - acr_pgdata:/var/lib/postgresql/data
+
+volumes:
+  acr_pgdata:
