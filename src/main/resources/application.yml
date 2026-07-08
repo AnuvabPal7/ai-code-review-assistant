@@ -2,9 +2,9 @@ spring:
   application:
     name: ai-code-review-assistant
   datasource:
-    url: jdbc:postgresql://<your-pooler-host>:6543/postgres?sslmode=require&user=postgres.<your-project-ref>&password=${DB_PASSWORD}&prepareThreshold=0
-    username: postgres
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require&user=postgres.qqfgnwrdsxrlxpoyjtox&password=${CRA_DB_PASSWORD}&prepareThreshold=0
+    username: postgres.qqfgnwrdsxrlxpoyjtox
+    password: ${CRA_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
