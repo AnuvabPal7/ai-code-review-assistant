@@ -13,6 +13,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ReviewFinding {
+    private String findingType; // STATIC_ANALYSIS, AI_LOGICAL_BUG, AI_SUGGESTION, SYSTEM
+
+    private String source; // CHECKSTYLE, PMD, AI, SYSTEM
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

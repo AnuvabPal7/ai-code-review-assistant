@@ -28,7 +28,10 @@ public class Project {
     private String projectName;
 
     @Column(name = "upload_type")
-    private String uploadType; // e.g. "FILE" or "ZIP"
+    private String uploadType;
+
+    @Column(name = "stored_file_name")
+    private String storedFileName;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

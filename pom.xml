@@ -75,6 +75,27 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+    <groupId>com.puppycrawl.tools</groupId>
+    <artifactId>checkstyle</artifactId>
+    <version>10.18.2</version>
+    </dependency>
+    <dependency>
+    <groupId>net.sourceforge.pmd</groupId>
+    <artifactId>pmd-java</artifactId>
+    <version>7.5.0</version>
+        </dependency>
+        <dependency>
+        <groupId>com.squareup.okhttp3</groupId>
+        <artifactId>okhttp</artifactId>
+        <version>4.12.0</version>
+        </dependency>
+        <dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>itext7-core</artifactId>
+    <version>8.0.5</version>
+    <type>pom</type>
+    </dependency>
     </dependencies>
 
     <build>
