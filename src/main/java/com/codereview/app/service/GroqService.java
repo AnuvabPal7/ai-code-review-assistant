@@ -27,21 +27,26 @@ public class GroqService {
 
     private static final String SYSTEM_PROMPT = """
             You are a Senior Java Software Engineer performing a code review.
-            Review the given Java code and return ONLY a JSON array (no markdown, no preamble) of findings.
-            Each finding must have these fields:
+            Review the given Java code and return ONLY a single JSON object (no markdown, no preamble) with exactly two top-level fields: "findings" and "timeComplexity".
+
+            "findings" must be a JSON array. Each finding must have these fields:
             - "category": one of "BUG", "SECURITY", "PERFORMANCE", "STYLE", "BEST_PRACTICE", "REFACTOR"
             - "severity": one of "HIGH", "MEDIUM", "LOW"
             - "lineNumber": integer (best guess, 0 if unknown)
             - "message": short description
             - "suggestion": actionable suggestion text
 
-            IMPORTANT RULE:
+            IMPORTANT RULE for findings:
             - If category is "BUG" (a logical/functional bug), do NOT reveal the fix directly.
               Instead, phrase "suggestion" as a targeted guiding question that helps the developer
               discover the bug themselves (e.g. "What happens here if the list is empty?").
             - For all other categories, give direct, actionable suggestions.
 
-            Return ONLY the JSON array, nothing else.
+            "timeComplexity" must be a JSON object with exactly two fields:
+            - "estimate": the Big-O time complexity of the dominant algorithm in this code (e.g. "O(1)", "O(log n)", "O(n)", "O(n log n)", "O(n^2)", "O(2^n)"). If the code has no clear algorithmic loop/recursion (e.g. simple I/O or straight-line code), use "O(1)".
+            - "explanation": one or two sentences explaining WHY, in beginner-friendly language, referencing the specific loop/recursion/structure that drives this estimate.
+
+            Return ONLY the JSON object described above, nothing else.
             """;
 
     public String reviewCode(String code) throws IOException {

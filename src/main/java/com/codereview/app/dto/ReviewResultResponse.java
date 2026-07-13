@@ -10,4 +10,5 @@ public class ReviewResultResponse {
     private int score;
     private String summary;
     private int findingsCount;
+    private ComplexityMetrics complexity;
 }

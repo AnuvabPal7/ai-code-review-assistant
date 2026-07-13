@@ -1,5 +1,6 @@
-﻿package com.codereview.app.service;
+package com.codereview.app.service;
 
+import com.codereview.app.dto.ComplexityMetrics;
 import com.codereview.app.dto.ReviewFindingDto;
 import com.codereview.app.dto.ReviewHistoryDto;
 import com.codereview.app.dto.ReviewResultResponse;
@@ -38,6 +39,7 @@ public class ReviewService {
     private final CheckstyleService checkstyleService;
     private final PmdService pmdService;
     private final GroqService groqService;
+    private final ComplexityAnalysisService complexityAnalysisService;
 
     @Value("${app.upload-dir}")
     private String uploadDir;
@@ -51,7 +53,19 @@ public class ReviewService {
         Path filePath = Paths.get(uploadDir).resolve(project.getStoredFileName());
         File javaFile = filePath.toFile();
 
-        Review review = reviewRepository.save(Review.builder().project(project).build());
+        ComplexityMetrics complexity = complexityAnalysisService.analyze(javaFile);
+
+        Review review = Review.builder()
+                .project(project)
+                .numClasses(complexity.getNumClasses())
+                .numMethods(complexity.getNumMethods())
+                .linesOfCode(complexity.getLinesOfCode())
+                .cyclomaticComplexity(complexity.getCyclomaticComplexity())
+                .maintainabilityIndex(complexity.getMaintainabilityIndex())
+                .estimatedTimeComplexity("O(1)")
+                .timeComplexityExplanation("Not yet analyzed by AI")
+                .build();
+        review = reviewRepository.save(review);
 
         List<ReviewFinding> allFindings = new ArrayList<>();
 
@@ -63,9 +77,25 @@ public class ReviewService {
         }
 
         String code = Files.readString(filePath);
+        String timeComplexityEstimate = "O(1)";
+        String timeComplexityExplanation = "Not analyzed";
+
         try {
-            String aiJson = groqService.reviewCode(code);
-            allFindings.addAll(parseAiFindings(review, aiJson));
+            String aiResponse = groqService.reviewCode(code);
+            String cleaned = aiResponse.trim();
+            if (cleaned.startsWith("```")) {
+                cleaned = cleaned.replaceAll("```json", "").replaceAll("```", "").trim();
+            }
+
+            JsonNode root = mapper.readTree(cleaned);
+
+            JsonNode findingsNode = root.path("findings");
+            allFindings.addAll(parseAiFindings(review, findingsNode));
+
+            JsonNode tcNode = root.path("timeComplexity");
+            timeComplexityEstimate = tcNode.path("estimate").asText("O(1)");
+            timeComplexityExplanation = tcNode.path("explanation").asText("No explanation provided");
+
         } catch (Exception e) {
             allFindings.add(ReviewFinding.builder()
                     .review(review)
@@ -85,9 +115,21 @@ public class ReviewService {
         int score = computeScore(allFindings);
         review.setReviewScore(score);
         review.setSummary("Found " + allFindings.size() + " findings across static analysis and AI review.");
+        review.setEstimatedTimeComplexity(timeComplexityEstimate);
+        review.setTimeComplexityExplanation(timeComplexityExplanation);
         reviewRepository.save(review);
 
-        return new ReviewResultResponse(review.getId(), score, review.getSummary(), allFindings.size());
+        ComplexityMetrics finalComplexity = new ComplexityMetrics(
+                complexity.getNumClasses(),
+                complexity.getNumMethods(),
+                complexity.getLinesOfCode(),
+                complexity.getCyclomaticComplexity(),
+                complexity.getMaintainabilityIndex(),
+                timeComplexityEstimate,
+                timeComplexityExplanation
+        );
+
+        return new ReviewResultResponse(review.getId(), score, review.getSummary(), allFindings.size(), finalComplexity);
     }
 
     public List<ReviewFindingDto> getFindings(Long reviewId) {
@@ -112,10 +154,25 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
+    public ComplexityMetrics getComplexity(Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+
+        return new ComplexityMetrics(
+                review.getNumClasses() == null ? 0 : review.getNumClasses(),
+                review.getNumMethods() == null ? 0 : review.getNumMethods(),
+                review.getLinesOfCode() == null ? 0 : review.getLinesOfCode(),
+                review.getCyclomaticComplexity() == null ? 0 : review.getCyclomaticComplexity(),
+                review.getMaintainabilityIndex() == null ? 0 : review.getMaintainabilityIndex(),
+                review.getEstimatedTimeComplexity() == null ? "O(1)" : review.getEstimatedTimeComplexity(),
+                review.getTimeComplexityExplanation() == null ? "" : review.getTimeComplexityExplanation()
+        );
+    }
+
     private ReviewFinding toEntity(Review review, StaticFinding f, String findingType) {
         return ReviewFinding.builder()
                 .review(review)
-                .severity(normalizeSeverity(f.getSeverity()))
+                .severity(normalizeSeverity(f.getSeverity(), f.getMessage()))
                 .issue(f.getMessage())
                 .explanation(friendlyExplanation(f.getMessage()))
                 .suggestion(friendlySuggestion(f.getMessage()))
@@ -126,7 +183,11 @@ public class ReviewService {
                 .build();
     }
 
-    private String normalizeSeverity(String raw) {
+    private String normalizeSeverity(String raw, String message) {
+        String m = message == null ? "" : message.toLowerCase();
+        if (m.contains("system.out") || m.contains("system.err")) {
+            return "LOW";
+        }
         if (raw == null) return "LOW";
         String s = raw.toUpperCase();
         if (s.contains("HIGH")) return "HIGH";
@@ -151,6 +212,12 @@ public class ReviewService {
         if (m.contains("empty catch")) {
             return "This code catches an error but does nothing about it, silently, which can hide real bugs from you later.";
         }
+        if (m.contains("magic number")) {
+            return "A number appears directly in the code without explanation. Giving it a named constant makes the code easier to understand later.";
+        }
+        if (m.contains("override")) {
+            return "This method overrides a method from a parent class/interface, but doesn't have the @Override annotation, which helps catch typos and mismatches.";
+        }
         return "A static analysis tool flagged this pattern as worth reviewing.";
     }
 
@@ -171,24 +238,25 @@ public class ReviewService {
         if (m.contains("empty catch")) {
             return "Add at least a comment or logging statement inside the catch block so errors aren't silently ignored.";
         }
+        if (m.contains("magic number")) {
+            return "Define a named constant (e.g. private static final int MAX_SIZE = 500;) instead of using the raw number directly.";
+        }
+        if (m.contains("override")) {
+            return "Add the @Override annotation directly above the method signature.";
+        }
         return "Review this line and consider whether a change improves clarity or safety.";
     }
 
-    private List<ReviewFinding> parseAiFindings(Review review, String aiJson) throws IOException {
+    private List<ReviewFinding> parseAiFindings(Review review, JsonNode findingsArray) {
         List<ReviewFinding> results = new ArrayList<>();
-        String cleaned = aiJson.trim();
-        if (cleaned.startsWith("```")) {
-            cleaned = cleaned.replaceAll("```json", "").replaceAll("```", "").trim();
-        }
 
-        JsonNode array = mapper.readTree(cleaned);
-        for (JsonNode node : array) {
+        for (JsonNode node : findingsArray) {
             String category = node.path("category").asText("STYLE");
             String findingType = "BUG".equalsIgnoreCase(category) ? "AI_LOGICAL_BUG" : "AI_SUGGESTION";
 
             results.add(ReviewFinding.builder()
                     .review(review)
-                    .severity(normalizeSeverity(node.path("severity").asText("LOW")))
+                    .severity(normalizeSeverity(node.path("severity").asText("LOW"), node.path("message").asText("")))
                     .issue(node.path("message").asText(""))
                     .explanation(category)
                     .suggestion(node.path("suggestion").asText(""))

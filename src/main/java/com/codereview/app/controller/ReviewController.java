@@ -1,5 +1,6 @@
 package com.codereview.app.controller;
 
+import com.codereview.app.dto.ComplexityMetrics;
 import com.codereview.app.dto.ReviewFindingDto;
 import com.codereview.app.dto.ReviewHistoryDto;
 import com.codereview.app.dto.ReviewResultResponse;
@@ -42,6 +43,11 @@ public class ReviewController {
     @GetMapping("/{reviewId}/findings")
     public ResponseEntity<List<ReviewFindingDto>> getFindings(@PathVariable Long reviewId) {
         return ResponseEntity.ok(reviewService.getFindings(reviewId));
+    }
+
+    @GetMapping("/{reviewId}/complexity")
+    public ResponseEntity<ComplexityMetrics> getComplexity(@PathVariable Long reviewId) {
+        return ResponseEntity.ok(reviewService.getComplexity(reviewId));
     }
 
     @GetMapping("/history")

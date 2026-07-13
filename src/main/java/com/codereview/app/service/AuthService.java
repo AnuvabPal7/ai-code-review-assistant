@@ -1,8 +1,10 @@
 package com.codereview.app.service;
 
 import com.codereview.app.dto.AuthResponse;
+import com.codereview.app.dto.ChangePasswordRequest;
 import com.codereview.app.dto.LoginRequest;
 import com.codereview.app.dto.RegisterRequest;
+import com.codereview.app.dto.UpdateProfileRequest;
 import com.codereview.app.entity.User;
 import com.codereview.app.repository.UserRepository;
 import com.codereview.app.security.JwtUtil;
@@ -48,5 +50,28 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(user.getEmail());
         return new AuthResponse(token, user.getEmail(), user.getName());
+    }
+
+    public AuthResponse updateProfile(String userEmail, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        user.setName(request.getName());
+        userRepository.save(user);
+
+        String token = jwtUtil.generateToken(user.getEmail());
+        return new AuthResponse(token, user.getEmail(), user.getName());
+    }
+
+    public void changePassword(String userEmail, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Old password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }
