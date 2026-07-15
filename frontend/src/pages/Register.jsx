@@ -23,17 +23,20 @@ function Register() {
 
   return (
     <div>
-      <h2>Register</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button type="submit">Register</button>
-      </form>
-      <p>
-        Already have an account? <Link to="/login">Login here</Link>
-      </p>
+      <h1 className="app-title">AI Code Review Assistant</h1>
+      <div className="auth-card">
+        <h2>Create account</h2>
+        {error && <div className="message error">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <button type="submit">Register</button>
+        </form>
+        <p className="muted-hint">
+          Already have an account? <Link to="/login">Log in here</Link>
+        </p>
+      </div>
     </div>
   );
 }

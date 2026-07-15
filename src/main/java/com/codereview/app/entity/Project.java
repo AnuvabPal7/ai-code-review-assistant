@@ -33,6 +33,9 @@ public class Project {
     @Column(name = "stored_file_name")
     private String storedFileName;
 
+    @Column(name = "detected_language")
+    private String detectedLanguage;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

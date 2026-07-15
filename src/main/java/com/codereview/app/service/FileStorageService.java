@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,6 +32,23 @@ public class FileStorageService {
 
         Path targetLocation = uploadPath.resolve(storedFilename);
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+
+        return storedFilename;
+    }
+
+    public String storeTextAsFile(String content, String originalFilename) throws IOException {
+        Path uploadPath = Paths.get(uploadDir);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : ".java";
+        String storedFilename = UUID.randomUUID() + extension;
+
+        Path targetLocation = uploadPath.resolve(storedFilename);
+        Files.writeString(targetLocation, content, StandardCharsets.UTF_8);
 
         return storedFilename;
     }

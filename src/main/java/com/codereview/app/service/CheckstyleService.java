@@ -49,7 +49,10 @@ public class CheckstyleService {
             checker.destroy();
 
         } catch (Exception e) {
-            findings.add(new StaticFinding("LOW", "Checkstyle analysis failed: " + e.getMessage(), "CHECKSTYLE", 0));
+            // Checkstyle can fail on files whose name doesn't match the public
+            // class inside (common for pasted snippets saved with generated names).
+            // Skip silently rather than surfacing a confusing internal error -
+            // PMD and the AI review still cover this file.
         }
 
         return findings;

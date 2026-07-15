@@ -22,16 +22,19 @@ function Login() {
 
   return (
     <div>
-      <h2>Login</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button type="submit">Login</button>
-      </form>
-      <p>
-        Don't have an account? <Link to="/register">Register here</Link>
-      </p>
+      <h1 className="app-title">AI Code Review Assistant</h1>
+      <div className="auth-card">
+        <h2>Log in</h2>
+        {error && <div className="message error">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <button type="submit">Log in</button>
+        </form>
+        <p className="muted-hint">
+          Don't have an account? <Link to="/register">Register here</Link>
+        </p>
+      </div>
     </div>
   );
 }

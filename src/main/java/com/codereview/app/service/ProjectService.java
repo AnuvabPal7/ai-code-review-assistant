@@ -1,6 +1,7 @@
 package com.codereview.app.service;
 
 import com.codereview.app.dto.ProjectResponse;
+import com.codereview.app.dto.SubmitCodeRequest;
 import com.codereview.app.entity.Project;
 import com.codereview.app.entity.Review;
 import com.codereview.app.entity.User;
@@ -25,23 +26,58 @@ public class ProjectService {
     private final ReviewRepository reviewRepository;
     private final ReviewFindingRepository reviewFindingRepository;
     private final FileStorageService fileStorageService;
+    private final LanguageDetectionService languageDetectionService;
 
     public ProjectResponse uploadProject(String userEmail, MultipartFile file) throws IOException {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        String originalFilename = file.getOriginalFilename();
+        String detectedLanguage = languageDetectionService.detectLanguage(originalFilename);
+        boolean supported = languageDetectionService.isSupported(originalFilename);
+
         String storedFilename = fileStorageService.storeFile(file);
 
         Project project = Project.builder()
                 .user(user)
-                .projectName(file.getOriginalFilename())
-                .uploadType(file.getOriginalFilename() != null && file.getOriginalFilename().endsWith(".zip") ? "ZIP" : "FILE")
+                .projectName(originalFilename)
+                .uploadType(originalFilename != null && originalFilename.endsWith(".zip") ? "ZIP" : "FILE")
                 .storedFileName(storedFilename)
+                .detectedLanguage(detectedLanguage)
                 .build();
 
         project = projectRepository.save(project);
 
-        return new ProjectResponse(project.getId(), project.getProjectName(), project.getUploadType(), project.getCreatedAt());
+        return new ProjectResponse(project.getId(), project.getProjectName(), project.getUploadType(),
+                project.getCreatedAt(), detectedLanguage, supported);
+    }
+
+    public ProjectResponse submitCodeSnippet(String userEmail, SubmitCodeRequest request) throws IOException {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        String fileName = request.getFileName();
+        if (fileName == null || fileName.isBlank()) {
+            fileName = "Snippet.java";
+        }
+
+        String detectedLanguage = languageDetectionService.detectLanguage(fileName);
+        boolean supported = languageDetectionService.isSupported(fileName);
+
+        String storedFilename = fileStorageService.storeTextAsFile(request.getCode(), fileName);
+
+        Project project = Project.builder()
+                .user(user)
+                .projectName(fileName)
+                .uploadType("SNIPPET")
+                .storedFileName(storedFilename)
+                .detectedLanguage(detectedLanguage)
+                .build();
+
+        project = projectRepository.save(project);
+
+        return new ProjectResponse(project.getId(), project.getProjectName(), project.getUploadType(),
+                project.getCreatedAt(), detectedLanguage, supported);
     }
 
     public List<ProjectResponse> getUserProjects(String userEmail) {
@@ -49,7 +85,9 @@ public class ProjectService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         return projectRepository.findByUserId(user.getId()).stream()
-                .map(p -> new ProjectResponse(p.getId(), p.getProjectName(), p.getUploadType(), p.getCreatedAt()))
+                .map(p -> new ProjectResponse(p.getId(), p.getProjectName(), p.getUploadType(),
+                        p.getCreatedAt(), p.getDetectedLanguage(),
+                        languageDetectionService.isSupported(p.getProjectName())))
                 .collect(Collectors.toList());
     }
 

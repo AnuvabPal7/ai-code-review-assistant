@@ -1,7 +1,9 @@
 package com.codereview.app.controller;
 
 import com.codereview.app.dto.ProjectResponse;
+import com.codereview.app.dto.SubmitCodeRequest;
 import com.codereview.app.service.ProjectService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,6 +27,16 @@ public class ProjectController {
     ) throws IOException {
         String userEmail = authentication.getName();
         ProjectResponse response = projectService.uploadProject(userEmail, file);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/submit-code")
+    public ResponseEntity<ProjectResponse> submitCode(
+            @Valid @RequestBody SubmitCodeRequest request,
+            Authentication authentication
+    ) throws IOException {
+        String userEmail = authentication.getName();
+        ProjectResponse response = projectService.submitCodeSnippet(userEmail, request);
         return ResponseEntity.ok(response);
     }
 

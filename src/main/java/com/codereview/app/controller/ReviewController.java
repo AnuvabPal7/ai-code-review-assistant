@@ -55,6 +55,12 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getUserReviewHistory(authentication.getName()));
     }
 
+    @DeleteMapping("/{reviewId}")
+    public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId, Authentication authentication) {
+        reviewService.deleteReview(reviewId, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{reviewId}/export/pdf")
     public ResponseEntity<Resource> exportPdf(@PathVariable Long reviewId) throws IOException {
         String fileName = pdfReportService.generateReport(reviewId);

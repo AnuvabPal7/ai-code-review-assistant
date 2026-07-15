@@ -40,6 +40,7 @@ public class ReviewService {
     private final PmdService pmdService;
     private final GroqService groqService;
     private final ComplexityAnalysisService complexityAnalysisService;
+    private final LanguageDetectionService languageDetectionService;
 
     @Value("${app.upload-dir}")
     private String uploadDir;
@@ -49,6 +50,13 @@ public class ReviewService {
     public ReviewResultResponse runReview(Long projectId, String userEmail) throws IOException {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+        if (!languageDetectionService.isSupported(project.getProjectName())) {
+            String detected = languageDetectionService.detectLanguage(project.getProjectName());
+            throw new IllegalArgumentException(
+                    "Detected file type: " + detected + ". This is not programmed yet - only Java files are currently supported."
+            );
+        }
 
         Path filePath = Paths.get(uploadDir).resolve(project.getStoredFileName());
         File javaFile = filePath.toFile();
@@ -167,6 +175,21 @@ public class ReviewService {
                 review.getEstimatedTimeComplexity() == null ? "O(1)" : review.getEstimatedTimeComplexity(),
                 review.getTimeComplexityExplanation() == null ? "" : review.getTimeComplexityExplanation()
         );
+    }
+
+    public void deleteReview(Long reviewId, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+
+        if (!review.getProject().getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("Not authorized to delete this review");
+        }
+
+        reviewFindingRepository.deleteAll(reviewFindingRepository.findByReviewId(reviewId));
+        reviewRepository.delete(review);
     }
 
     private ReviewFinding toEntity(Review review, StaticFinding f, String findingType) {

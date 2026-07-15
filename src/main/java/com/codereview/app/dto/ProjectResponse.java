@@ -12,4 +12,6 @@ public class ProjectResponse {
     private String projectName;
     private String uploadType;
     private LocalDateTime createdAt;
+    private String detectedLanguage;
+    private boolean supported;
 }

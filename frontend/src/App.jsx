@@ -1,9 +1,10 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ReviewResults from './pages/ReviewResults';
 import ReviewHistory from './pages/ReviewHistory';
+import Profile from './pages/Profile';
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem('token');
@@ -37,6 +38,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ReviewHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />

@@ -1,22 +1,27 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 
 function ReviewResults() {
   const { reviewId } = useParams();
   const [findings, setFindings] = useState([]);
+  const [complexity, setComplexity] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchFindings = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get(`/reviews/${reviewId}/findings`);
-        setFindings(res.data);
+        const [findingsRes, complexityRes] = await Promise.all([
+          api.get(`/reviews/${reviewId}/findings`),
+          api.get(`/reviews/${reviewId}/complexity`),
+        ]);
+        setFindings(findingsRes.data);
+        setComplexity(complexityRes.data);
       } catch (err) {
-        setError('Failed to load findings');
+        setError('Failed to load review data');
       }
     };
-    fetchFindings();
+    fetchData();
   }, [reviewId]);
 
   const handleExportPdf = async () => {
@@ -36,12 +41,49 @@ function ReviewResults() {
 
   return (
     <div>
-      <Link to="/dashboard">Back to Dashboard</Link>
-      <h2>Review Results</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button onClick={handleExportPdf}>Export as PDF</button>
+      <div className="nav-bar">
+        <h2>Review Results</h2>
+        <Link to="/dashboard">Back to Dashboard</Link>
+        <button className="secondary" onClick={handleExportPdf}>Export as PDF</button>
+      </div>
 
-      <table border="1" cellPadding="8" style={{ marginTop: '20px', width: '100%' }}>
+      {error && <div className="message error">{error}</div>}
+
+      {complexity && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Complexity Analysis</h3>
+          <div className="complexity-grid">
+            <div className="complexity-stat">
+              <div className="label">Classes</div>
+              <div className="value">{complexity.numClasses}</div>
+            </div>
+            <div className="complexity-stat">
+              <div className="label">Methods</div>
+              <div className="value">{complexity.numMethods}</div>
+            </div>
+            <div className="complexity-stat">
+              <div className="label">Lines of Code</div>
+              <div className="value">{complexity.linesOfCode}</div>
+            </div>
+            <div className="complexity-stat">
+              <div className="label">Cyclomatic Complexity</div>
+              <div className="value">{complexity.cyclomaticComplexity}</div>
+            </div>
+            <div className="complexity-stat">
+              <div className="label">Maintainability Index</div>
+              <div className="value">{complexity.maintainabilityIndex}/100</div>
+            </div>
+            <div className="complexity-stat time-complexity-box">
+              <div className="label">Estimated Time Complexity (AI)</div>
+              <div className="value">{complexity.estimatedTimeComplexity}</div>
+              <div className="explanation">{complexity.timeComplexityExplanation}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <h3>Findings</h3>
+      <table>
         <thead>
           <tr>
             <th>Severity</th>
@@ -55,7 +97,7 @@ function ReviewResults() {
         <tbody>
           {findings.map((f) => (
             <tr key={f.id}>
-              <td>{f.severity}</td>
+              <td><span className={`badge ${f.severity}`}>{f.severity}</span></td>
               <td>{f.source}</td>
               <td>{f.findingType}</td>
               <td>{f.issue}</td>
