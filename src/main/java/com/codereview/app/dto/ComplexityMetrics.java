@@ -10,6 +10,7 @@ public class ComplexityMetrics {
     private int numMethods;
     private int linesOfCode;
     private int cyclomaticComplexity;
+    private double averageMethodLength;
     private double maintainabilityIndex;
     private String estimatedTimeComplexity;
     private String timeComplexityExplanation;

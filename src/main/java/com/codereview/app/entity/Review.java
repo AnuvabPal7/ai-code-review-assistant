@@ -42,6 +42,9 @@ public class Review {
     @Column(name = "cyclomatic_complexity")
     private Integer cyclomaticComplexity;
 
+    @Column(name = "average_method_length")
+    private Double averageMethodLength;
+
     @Column(name = "maintainability_index")
     private Double maintainabilityIndex;
 

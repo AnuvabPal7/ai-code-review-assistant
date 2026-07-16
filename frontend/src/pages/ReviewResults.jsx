@@ -70,6 +70,10 @@ function ReviewResults() {
               <div className="value">{complexity.cyclomaticComplexity}</div>
             </div>
             <div className="complexity-stat">
+              <div className="label">Average Method Length</div>
+              <div className="value">{complexity.averageMethodLength} lines</div>
+            </div>
+            <div className="complexity-stat">
               <div className="label">Maintainability Index</div>
               <div className="value">{complexity.maintainabilityIndex}/100</div>
             </div>

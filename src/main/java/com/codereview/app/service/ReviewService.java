@@ -41,6 +41,7 @@ public class ReviewService {
     private final GroqService groqService;
     private final ComplexityAnalysisService complexityAnalysisService;
     private final LanguageDetectionService languageDetectionService;
+    private final JavaCompileService javaCompileService;
 
     @Value("${app.upload-dir}")
     private String uploadDir;
@@ -61,6 +62,18 @@ public class ReviewService {
         Path filePath = Paths.get(uploadDir).resolve(project.getStoredFileName());
         File javaFile = filePath.toFile();
 
+        try {
+            String compileError = javaCompileService.checkCompiles(javaFile);
+            if (compileError != null) {
+                throw new IllegalArgumentException(
+                        "This file does not compile as valid Java code. Compiler output:\n" + compileError
+                );
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalArgumentException("Compilation check was interrupted. Please try again.");
+        }
+
         ComplexityMetrics complexity = complexityAnalysisService.analyze(javaFile);
 
         Review review = Review.builder()
@@ -69,6 +82,7 @@ public class ReviewService {
                 .numMethods(complexity.getNumMethods())
                 .linesOfCode(complexity.getLinesOfCode())
                 .cyclomaticComplexity(complexity.getCyclomaticComplexity())
+                .averageMethodLength(complexity.getAverageMethodLength())
                 .maintainabilityIndex(complexity.getMaintainabilityIndex())
                 .estimatedTimeComplexity("O(1)")
                 .timeComplexityExplanation("Not yet analyzed by AI")
@@ -132,6 +146,7 @@ public class ReviewService {
                 complexity.getNumMethods(),
                 complexity.getLinesOfCode(),
                 complexity.getCyclomaticComplexity(),
+                complexity.getAverageMethodLength(),
                 complexity.getMaintainabilityIndex(),
                 timeComplexityEstimate,
                 timeComplexityExplanation
@@ -171,6 +186,7 @@ public class ReviewService {
                 review.getNumMethods() == null ? 0 : review.getNumMethods(),
                 review.getLinesOfCode() == null ? 0 : review.getLinesOfCode(),
                 review.getCyclomaticComplexity() == null ? 0 : review.getCyclomaticComplexity(),
+                review.getAverageMethodLength() == null ? 0 : review.getAverageMethodLength(),
                 review.getMaintainabilityIndex() == null ? 0 : review.getMaintainabilityIndex(),
                 review.getEstimatedTimeComplexity() == null ? "O(1)" : review.getEstimatedTimeComplexity(),
                 review.getTimeComplexityExplanation() == null ? "" : review.getTimeComplexityExplanation()

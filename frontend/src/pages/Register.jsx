@@ -11,13 +11,15 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       const res = await api.post('/auth/register', { name, email, password });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('userName', res.data.name);
       navigate('/dashboard');
     } catch (err) {
-      setError('Registration failed. Email may already be in use.');
+      const message = err.response?.data?.message || 'Registration failed. Please try again.';
+      setError(message);
     }
   };
 

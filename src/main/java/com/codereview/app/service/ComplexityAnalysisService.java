@@ -24,19 +24,28 @@ public class ComplexityAnalysisService {
         int linesOfCode = (int) code.lines().filter(line -> !line.trim().isEmpty()).count();
 
         int numClasses = countMatches(CLASS_PATTERN, code);
-        int numMethods = countMatches(METHOD_PATTERN, code);
+        int rawMethodCount = countMatches(METHOD_PATTERN, code);
+        int numMethods = Math.max(rawMethodCount, 1);
         int branchCount = countMatches(BRANCH_PATTERN, code);
 
         int cyclomaticComplexity = 1 + branchCount;
+
+        // Approximate average method length: total non-blank lines divided by
+        // number of detected methods. This is a simplified heuristic (regex-based,
+        // not a true parser), so treat it as an estimate rather than an exact figure.
+        double averageMethodLength = rawMethodCount > 0
+                ? Math.round(((double) linesOfCode / rawMethodCount) * 100.0) / 100.0
+                : linesOfCode;
 
         double maintainabilityIndex = Math.max(0,
                 100 - (cyclomaticComplexity * 2) - (linesOfCode / 10.0));
 
         return new ComplexityMetrics(
                 numClasses,
-                Math.max(numMethods, 1),
+                numMethods,
                 linesOfCode,
                 cyclomaticComplexity,
+                averageMethodLength,
                 Math.round(maintainabilityIndex * 100.0) / 100.0,
                 "O(1)",
                 "Not yet analyzed by AI"
