@@ -23,7 +23,8 @@ import java.util.regex.Pattern;
 public class SpotBugsService {
 
     private static final Pattern CLASS_NAME_PATTERN = Pattern.compile("\\bclass\\s+(\\w+)");
-    private static final String SPOTBUGS_HOME = "D:\\tools\\spotbugs-4.8.6";
+    @org.springframework.beans.factory.annotation.Value("${spotbugs.home:D:\\tools\\spotbugs-4.8.6}")
+    private String spotbugsHome;
 
     public List<StaticFinding> analyze(File javaFile) {
         List<StaticFinding> findings = new ArrayList<>();
@@ -50,7 +51,7 @@ public class SpotBugsService {
             }
 
             Path reportFile = tempDir.resolve("spotbugs-report.xml");
-            String spotbugsJar = SPOTBUGS_HOME + "\\lib\\spotbugs.jar";
+            String spotbugsJar = spotbugsHome + java.io.File.separator + "lib" + java.io.File.separator + "spotbugs.jar";
 
             ProcessBuilder sbPb = new ProcessBuilder(
                     "java", "-jar", spotbugsJar,
