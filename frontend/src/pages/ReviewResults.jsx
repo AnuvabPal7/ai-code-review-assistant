@@ -8,6 +8,10 @@ function ReviewResults() {
   const [complexity, setComplexity] = useState(null);
   const [error, setError] = useState('');
 
+  const [documentation, setDocumentation] = useState(null);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [projectId, setProjectId] = useState(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -17,6 +21,13 @@ function ReviewResults() {
         ]);
         setFindings(findingsRes.data);
         setComplexity(complexityRes.data);
+
+        const projectsRes = await api.get('/projects');
+        if (findingsRes.data.length > 0) {
+          const fileName = findingsRes.data[0].fileName;
+          const match = projectsRes.data.find((p) => p.projectName === fileName);
+          if (match) setProjectId(match.id);
+        }
       } catch (err) {
         setError('Failed to load review data');
       }
@@ -39,12 +50,32 @@ function ReviewResults() {
     }
   };
 
+  const handleGenerateDocs = async () => {
+    if (!projectId) {
+      setError('Could not determine which project this review belongs to.');
+      return;
+    }
+    setLoadingDocs(true);
+    setError('');
+    try {
+      const res = await api.post(`/documentation/${projectId}`);
+      setDocumentation(res.data);
+    } catch (err) {
+      setError('Failed to generate documentation');
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
   return (
     <div>
       <div className="nav-bar">
         <h2>Review Results</h2>
         <Link to="/dashboard">Back to Dashboard</Link>
         <button className="secondary" onClick={handleExportPdf}>Export as PDF</button>
+        <button className="secondary" onClick={handleGenerateDocs} disabled={loadingDocs}>
+          {loadingDocs ? 'Generating...' : 'Generate Documentation'}
+        </button>
       </div>
 
       {error && <div className="message error">{error}</div>}
@@ -83,6 +114,28 @@ function ReviewResults() {
               <div className="explanation">{complexity.timeComplexityExplanation}</div>
             </div>
           </div>
+        </div>
+      )}
+
+      {documentation && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Generated Documentation</h3>
+          <p>{documentation.classSummary}</p>
+          {documentation.methods.map((m, i) => (
+            <div key={i} style={{ borderTop: '1px solid var(--border)', paddingTop: '10px', marginTop: '10px' }}>
+              <strong>{m.methodName}()</strong>
+              <p style={{ margin: '4px 0' }}>{m.description}</p>
+              {m.parameters.length > 0 && (
+                <div className="muted-hint">
+                  <strong>Parameters:</strong>
+                  <ul style={{ margin: '4px 0' }}>
+                    {m.parameters.map((p, j) => <li key={j}>{p}</li>)}
+                  </ul>
+                </div>
+              )}
+              <div className="muted-hint"><strong>Returns:</strong> {m.returns}</div>
+            </div>
+          ))}
         </div>
       )}
 

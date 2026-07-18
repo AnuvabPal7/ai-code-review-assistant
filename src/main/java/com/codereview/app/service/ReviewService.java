@@ -38,6 +38,7 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final CheckstyleService checkstyleService;
     private final PmdService pmdService;
+    private final SpotBugsService spotBugsService;
     private final GroqService groqService;
     private final ComplexityAnalysisService complexityAnalysisService;
     private final LanguageDetectionService languageDetectionService;
@@ -95,6 +96,9 @@ public class ReviewService {
             allFindings.add(toEntity(review, f, "STATIC_ANALYSIS"));
         }
         for (StaticFinding f : pmdService.analyze(javaFile)) {
+            allFindings.add(toEntity(review, f, "STATIC_ANALYSIS"));
+        }
+        for (StaticFinding f : spotBugsService.analyze(javaFile)) {
             allFindings.add(toEntity(review, f, "STATIC_ANALYSIS"));
         }
 
